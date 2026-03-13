@@ -26,8 +26,8 @@ services:
       DB_USER: prestashop
       DB_PASSWD: prestashop123
     volumes:
-      - prestashop_modules:/var/www/html/modules
-      - prestashop_themes:/var/www/html/themes
+      - ./prestashop/modules:/var/www/html/modules
+      - ./prestashop/themes:/var/www/html/themes
       - prestashop_img:/var/www/html/img
       - prestashop_upload:/var/www/html/upload
       - prestashop_download:/var/www/html/download
@@ -48,8 +48,6 @@ services:
 
 volumes:
   mysql_data:
-  prestashop_modules:
-  prestashop_themes:
   prestashop_img:
   prestashop_upload:
   prestashop_download:
