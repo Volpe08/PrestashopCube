@@ -1,0 +1,122 @@
+# Module Payment Selector pour PrestaShop
+
+## 📋 Description
+
+Ce module permet d'afficher automatiquement **SumUp** ou **Stripe** selon le montant du panier :
+- **Montant < seuil** → Affichage de SumUp uniquement
+- **Montant ≥ seuil** → Affichage de Stripe uniquement
+
+## 📦 Installation
+
+### 1. Structure des fichiers
+
+Créez cette structure dans `/modules/paymentselector/` :
+
+```
+modules/paymentselector/
+├── paymentselector.php
+├── config.xml
+├── logo.png (optionnel)
+└── views/
+    └── js/
+        └── payment-filter.js
+```
+
+### 2. Fichier config.xml
+
+Créez `/modules/paymentselector/config.xml` :
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<module>
+    <name>paymentselector</name>
+    <displayName><![CDATA[Payment Selector]]></displayName>
+    <version><![CDATA[1.0.0]]></version>
+    <description><![CDATA[Affiche SumUp ou Stripe selon le montant du panier]]></description>
+    <author><![CDATA[Custom]]></author>
+    <tab><![CDATA[payments_gateways]]></tab>
+    <is_configurable>1</is_configurable>
+    <need_instance>0</need_instance>
+    <limited_countries></limited_countries>
+</module>
+```
+
+### 3. Installation du module
+
+1. Placez le dossier `paymentselector` dans `/modules/`
+2. Allez dans **Modules** → **Module Manager** dans votre back-office
+3. Recherchez "Payment Selector"
+4. Cliquez sur **Installer**
+
+## ⚙️ Configuration
+
+1. Une fois installé, cliquez sur **Configurer**
+2. Entrez le **montant seuil** en euros (par exemple : 100)
+3. Cliquez sur **Enregistrer**
+
+### Exemple de configuration :
+- **Seuil : 100 €**
+  - Panier de 50 € → SumUp s'affiche
+  - Panier de 100 € → Stripe s'affiche
+  - Panier de 150 € → Stripe s'affiche
+
+## 🔧 Personnalisation des sélecteurs
+
+Si les noms de vos modules Stripe/SumUp sont différents, modifiez le fichier `payment-filter.js` :
+
+```javascript
+// Trouvez ces lignes et adaptez-les à vos modules
+const stripeSelectors = [
+    '[data-module-name="votre_module_stripe"]',  // Nom exact de votre module Stripe
+    '[id*="stripe"]',
+];
+
+const sumupSelectors = [
+    '[data-module-name="votre_module_sumup"]',   // Nom exact de votre module SumUp
+    '[id*="sumup"]',
+];
+```
+
+### Comment trouver le nom exact ?
+
+1. Allez sur la page de paiement de votre boutique
+2. Faites **Clic droit** → **Inspecter** sur l'option de paiement
+3. Cherchez l'attribut `data-module-name` dans le HTML
+
+## 🐛 Dépannage
+
+### Les deux méthodes s'affichent toujours
+
+1. Vérifiez que le module est bien activé
+2. Videz le cache PrestaShop : **Paramètres avancés** → **Performances** → **Vider le cache**
+3. Vérifiez la console JavaScript du navigateur (F12) pour voir les logs
+
+### Le JavaScript ne se charge pas
+
+Ajoutez ce code dans `paymentselector.php` après la ligne `public function hookPaymentOptions` :
+
+```php
+// Forcer le chargement du JS
+$this->context->controller->registerJavascript(
+    'payment-selector',
+    'modules/' . $this->name . '/views/js/payment-filter.js',
+    ['position' => 'bottom', 'priority' => 150]
+);
+```
+
+## 📝 Notes importantes
+
+- ⚠️ Assurez-vous que Stripe et SumUp sont bien installés et configurés
+- ⚠️ Le filtrage se fait côté client (JavaScript), donc les deux modules restent techniquement disponibles
+- ⚠️ Testez bien avec différents montants de panier avant la mise en production
+
+## 🔄 Mise à jour
+
+Pour modifier le seuil, retournez simplement dans la configuration du module et changez la valeur.
+
+## 📞 Support
+
+En cas de problème, vérifiez :
+1. Les logs d'erreur PrestaShop (`/var/logs/`)
+2. La console JavaScript du navigateur (F12)
+3. Que les noms des modules correspondent bien dans le code JavaScript
