@@ -14,7 +14,8 @@ services:
       - mysql_data:/var/lib/mysql
 
   prestashop:
-    image: prestashop/prestashop:8-apache
+    build:
+      context: ./prestashop-app
     restart: unless-stopped
     depends_on:
       - mysql
@@ -26,8 +27,9 @@ services:
       DB_USER: prestashop
       DB_PASSWD: prestashop123
     volumes:
-      - ./prestashop/modules:/var/www/html/modules
+      - prestashop_modules:/var/www/html/modules
       - ./prestashop/themes:/var/www/html/themes
+      - ./prestashop/custom-modules:/opt/prestashop-custom-modules:ro
       - prestashop_img:/var/www/html/img
       - prestashop_upload:/var/www/html/upload
       - prestashop_download:/var/www/html/download
@@ -48,6 +50,7 @@ services:
 
 volumes:
   mysql_data:
+  prestashop_modules:
   prestashop_img:
   prestashop_upload:
   prestashop_download:
