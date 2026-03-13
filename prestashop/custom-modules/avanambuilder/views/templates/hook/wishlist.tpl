@@ -1,1 +1,0 @@
-<a class="btn-canvas btn-canvas-wishlist elementor-button" data-ajaxurl="{$ajax_url}" href="{$url}" title="{l s='Wishlist' mod='blockwishlist'}"><span class="elementor-wish-icon wishlist" data-counter="{$count}">{if isset($icon) && $icon}{$icon nofilter}{else}<i class="lar la-heart"></i>{/if}</span><span class="btn-canvas-text">{l s='Wishlist' mod='blockwishlist'}</span></a>
