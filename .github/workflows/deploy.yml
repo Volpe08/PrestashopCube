@@ -1,0 +1,22 @@
+name: CI/CD Prestashop Coolify
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  validate-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate docker-compose.yml
+        run: docker compose -f docker-compose.yml config > /dev/null
+
+      - name: Trigger Coolify deployment
+        run: |
+          curl --fail --silent --show-error \
+            -X POST "${{ secrets.COOLIFY_WEBHOOK_URL }}"
