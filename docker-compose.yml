@@ -1,0 +1,56 @@
+version: '3'
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_DATABASE: prestashop
+      MYSQL_USER: prestashop
+      MYSQL_PASSWORD: prestashop123
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  prestashop:
+    image: prestashop/prestashop:8-apache
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    ports:
+      - "80"
+    environment:
+      DB_SERVER: mysql
+      DB_NAME: prestashop
+      DB_USER: prestashop
+      DB_PASSWD: prestashop123
+    volumes:
+      - prestashop_modules:/var/www/html/modules
+      - prestashop_themes:/var/www/html/themes
+      - prestashop_img:/var/www/html/img
+      - prestashop_upload:/var/www/html/upload
+      - prestashop_download:/var/www/html/download
+      - prestashop_var:/var/www/html/var
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    ports:
+      - "80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: prestashop
+      PMA_PASSWORD: prestashop123
+
+volumes:
+  mysql_data:
+  prestashop_modules:
+  prestashop_themes:
+  prestashop_img:
+  prestashop_upload:
+  prestashop_download:
+  prestashop_var:
