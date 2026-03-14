@@ -14,7 +14,7 @@ class PaymentSelector extends Module
     {
         $this->name = 'paymentselector';
         $this->tab = 'payments_gateways';
-        $this->version = '1.0.0';
+        $this->version = '1.0.0-cube';
         $this->author = '3D Painters';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = ['min' => '1.7', 'max' => _PS_VERSION_];
