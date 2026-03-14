@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   mysql:
     image: mysql:8.0
@@ -15,7 +13,8 @@ services:
 
   prestashop:
     build:
-      context: ./prestashop-app
+      context: .
+      dockerfile: ./prestashop-app/Dockerfile
     restart: unless-stopped
     depends_on:
       - mysql
@@ -29,7 +28,6 @@ services:
     volumes:
       - prestashop_modules:/var/www/html/modules
       - prestashop_themes:/var/www/html/themes
-      - ./prestashop/custom-modules:/opt/prestashop-custom-modules:ro
       - prestashop_config:/var/www/html/config
       - prestashop_app_config:/var/www/html/app/config
       - prestashop_img:/var/www/html/img
