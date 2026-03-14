@@ -3,9 +3,11 @@ set -eu
 
 CUSTOM_MODULES_DIR="/opt/prestashop-custom-modules"
 TARGET_MODULES_DIR="/var/www/html/modules"
+ADMIN_TARGET="admin104hsvuc059ecpn57uw"
 
 echo "[init] custom entrypoint started"
 
+# Detect prestashop install
 if [ -f /var/www/html/app/config/parameters.php ] || [ -f /var/www/html/config/settings.inc.php ]; then
   echo "[init] Prestashop config detected"
   rm -rf /var/www/html/install || true
@@ -13,6 +15,13 @@ else
   echo "[init] Prestashop config NOT detected"
 fi
 
+# Rename admin folder if needed
+if [ -d "/var/www/html/admin" ]; then
+  echo "[init] renaming admin folder"
+  mv /var/www/html/admin "/var/www/html/$ADMIN_TARGET"
+fi
+
+# Sync custom modules
 if [ -d "$CUSTOM_MODULES_DIR" ]; then
   echo "[init] syncing custom modules..."
   for module_path in "$CUSTOM_MODULES_DIR"/*; do
@@ -26,5 +35,5 @@ if [ -d "$CUSTOM_MODULES_DIR" ]; then
   done
 fi
 
-echo "[init] startup Prestashop"
+echo "[init] starting Prestashop"
 exec "$@"
