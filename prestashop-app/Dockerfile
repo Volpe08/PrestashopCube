@@ -1,7 +1,7 @@
 FROM prestashop/prestashop:8-apache
 
-COPY docker-entrypoint-custom.sh /usr/local/bin/docker-entrypoint-custom.sh
-COPY ../prestashop/custom-modules /opt/prestashop-custom-modules
+COPY prestashop-app/docker-entrypoint-custom.sh /usr/local/bin/docker-entrypoint-custom.sh
+COPY prestashop/custom-modules /opt/prestashop-custom-modules
 
 RUN chmod +x /usr/local/bin/docker-entrypoint-custom.sh
 
