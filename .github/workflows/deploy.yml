@@ -73,7 +73,7 @@ jobs:
 
     steps:
       - name: Wait for deployment
-        run: sleep 40
+        run: sleep 60
 
       - name: Smoke test - homepage HTTP 200
         run: |
@@ -96,5 +96,13 @@ jobs:
           status=$(curl -o /dev/null -s -w "%{http_code}" https://prestashopcube.dev.fabdevlab.fr/install/)
           if [ "$status" -eq 200 ]; then
             echo "Install page is still accessible"
+            exit 1
+          fi
+
+      - name: Regression test - product URL rewrite
+        run: |
+          status=$(curl -o /dev/null -s -w "%{http_code}" "https://prestashopcube.dev.fabdevlab.fr/art/4-16-affiche-encadree-the-adventure-begins.html")
+          if [ "$status" -ne 200 ]; then
+            echo "Product rewrite returned HTTP $status"
             exit 1
           fi

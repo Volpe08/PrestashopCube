@@ -35,5 +35,11 @@ if [ -d "$CUSTOM_MODULES_DIR" ]; then
   done
 fi
 
+# Ensure htaccess exists (for URL rewriting)
+if [ ! -f /var/www/html/.htaccess ]; then
+  echo "[init] .htaccess missing, generating it"
+  php /var/www/html/bin/console prestashop:config generate-htaccess || true
+fi
+
 echo "[init] starting Prestashop"
 exec "$@"
