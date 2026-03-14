@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
-  validate-and-deploy:
+  validate:
+    name: Validate infrastructure
     runs-on: ubuntu-latest
 
     steps:
@@ -16,11 +18,83 @@ jobs:
       - name: Validate docker-compose.yml
         run: docker compose -f docker-compose.yml config > /dev/null
 
+  test:
+    name: Test custom modules
+    runs-on: ubuntu-latest
+    needs: validate
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check custom modules directory exists
+        run: |
+          test -d prestashop/custom-modules
+
+      - name: Verify at least one custom module exists
+        run: |
+          find prestashop/custom-modules -mindepth 1 -maxdepth 1 -type d | grep .
+
+      - name: Validate custom modules structure
+        run: |
+          for dir in prestashop/custom-modules/*; do
+            [ -d "$dir" ] || continue
+            find "$dir" -maxdepth 1 -type f -name "*.php" | grep . > /dev/null
+          done
+
+      - name: PHP syntax check for all custom modules
+        run: |
+          find prestashop/custom-modules -type f -name "*.php" -print0 | xargs -0 -n1 php -l
+
+  deploy:
+    name: Deploy to Coolify
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
       - name: Trigger Coolify deployment
         env:
           COOLIFY_WEBHOOK_URL: ${{ secrets.COOLIFY_WEBHOOK_URL }}
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
         run: |
+          if [ -z "$COOLIFY_WEBHOOK_URL" ] || [ -z "$COOLIFY_TOKEN" ]; then
+            echo "Missing Coolify secrets"
+            exit 1
+          fi
+
           curl --fail --silent --show-error \
             -X POST "$COOLIFY_WEBHOOK_URL" \
             -H "Authorization: Bearer $COOLIFY_TOKEN"
+
+  regression:
+    name: Regression and smoke tests
+    runs-on: ubuntu-latest
+    needs: deploy
+
+    steps:
+      - name: Wait for deployment
+        run: sleep 40
+
+      - name: Smoke test - homepage HTTP 200
+        run: |
+          status=$(curl -o /dev/null -s -w "%{http_code}" https://prestashopcube.dev.fabdevlab.fr)
+          if [ "$status" -ne 200 ]; then
+            echo "Homepage returned HTTP $status"
+            exit 1
+          fi
+
+      - name: Regression test - homepage content
+        run: |
+          curl --fail --silent https://prestashopcube.dev.fabdevlab.fr | grep -i "La Petite Maison"
+
+      - name: Regression test - admin login page
+        run: |
+          curl --fail --silent https://prestashopcube.dev.fabdevlab.fr/admin104hsvuc059ecpn57uw | grep -i "PrestaShop"
+
+      - name: Regression test - no install page exposed
+        run: |
+          status=$(curl -o /dev/null -s -w "%{http_code}" https://prestashopcube.dev.fabdevlab.fr/install/)
+          if [ "$status" -eq 200 ]; then
+            echo "Install page is still accessible"
+            exit 1
+          fi
