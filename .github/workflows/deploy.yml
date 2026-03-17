@@ -41,7 +41,8 @@ jobs:
           done
 
       - name: PHP syntax check for all custom modules
-        run: find prestashop/custom-modules -type f -name "*.php" -print0 | xargs -0 -n1 php -l
+        run: |
+          find prestashop/custom-modules -type f -name "*.php" -print0 | xargs -0 -n1 php -l
 
   regression_predeploy:
     name: Regression tests before deploy
@@ -55,7 +56,7 @@ jobs:
       - name: Start stack locally
         run: docker compose up -d
 
-      - name: Wait for local PrestaShop to be ready
+      - name: Wait for PrestaShop
         run: |
           for i in {1..30}; do
             status=$(curl -o /dev/null -s -w "%{http_code}" http://localhost || true)
@@ -63,15 +64,14 @@ jobs:
               echo "PrestaShop is up"
               exit 0
             fi
-            echo "Waiting for PrestaShop..."
+            echo "Waiting..."
             sleep 10
           done
-          echo "PrestaShop did not start in time"
-          docker compose ps
+          echo "PrestaShop did not start"
           docker compose logs --no-color
           exit 1
 
-      - name: Regression test - homepage HTTP OK
+      - name: Homepage HTTP OK
         run: |
           status=$(curl -o /dev/null -s -w "%{http_code}" http://localhost)
           if [ "$status" -ne 200 ] && [ "$status" -ne 301 ] && [ "$status" -ne 302 ]; then
@@ -79,33 +79,31 @@ jobs:
             exit 1
           fi
 
-      - name: Regression test - homepage content
-        run: curl --fail --silent http://localhost | grep -i "La Petite Maison"
+      - name: Homepage content
+        run: |
+          curl --fail --silent http://localhost | grep -i "La Petite Maison"
 
-      - name: Regression test - admin login page
-        run: curl --fail --silent http://localhost/admin104hsvuc059ecpn57uw | grep -i "PrestaShop"
+      - name: Admin page
+        run: |
+          curl --fail --silent http://localhost/admin104hsvuc059ecpn57uw | grep -i "PrestaShop"
 
-      - name: Regression test - no install page exposed
+      - name: No install page
         run: |
           status=$(curl -o /dev/null -s -w "%{http_code}" http://localhost/install/)
           if [ "$status" -eq 200 ]; then
-            echo "Install page is still accessible"
+            echo "Install page accessible"
             exit 1
           fi
 
-      - name: Regression test - product URL rewrite
+      - name: Product URL rewrite
         run: |
           status=$(curl -o /dev/null -s -w "%{http_code}" "http://localhost/art/4-16-affiche-encadree-the-adventure-begins.html")
           if [ "$status" -ne 200 ] && [ "$status" -ne 301 ] && [ "$status" -ne 302 ]; then
-            echo "Product rewrite returned HTTP $status"
+            echo "Product rewrite error $status"
             exit 1
           fi
 
-      - name: Show local container logs on failure
-        if: failure()
-        run: docker compose logs --no-color
-
-      - name: Stop local stack
+      - name: Stop stack
         if: always()
         run: docker compose down -v
 
@@ -130,7 +128,7 @@ jobs:
             -H "Authorization: Bearer $COOLIFY_TOKEN"
 
   smoke_postdeploy:
-    name: Smoke and regression tests after deploy
+    name: Smoke tests after deploy
     runs-on: ubuntu-latest
     needs: deploy
 
@@ -138,7 +136,7 @@ jobs:
       - name: Wait for deployment
         run: sleep 60
 
-      - name: Smoke test - homepage HTTP 200
+      - name: Homepage HTTP 200
         run: |
           status=$(curl -o /dev/null -s -w "%{http_code}" https://prestashopcube.dev.fabdevlab.fr)
           if [ "$status" -ne 200 ]; then
@@ -146,31 +144,31 @@ jobs:
             exit 1
           fi
 
-      - name: Regression test - homepage content
+      - name: Homepage content
         run: |
           curl --fail --silent https://prestashopcube.dev.fabdevlab.fr | grep -i "La Petite Maison"
 
-      - name: Regression test - admin login page
+      - name: Admin page
         run: |
           curl --fail --silent https://prestashopcube.dev.fabdevlab.fr/admin104hsvuc059ecpn57uw | grep -i "PrestaShop"
 
-      - name: Regression test - no install page exposed
+      - name: No install page
         run: |
           status=$(curl -o /dev/null -s -w "%{http_code}" https://prestashopcube.dev.fabdevlab.fr/install/)
           if [ "$status" -eq 200 ]; then
-            echo "Install page is still accessible"
+            echo "Install page accessible"
             exit 1
           fi
 
-      - name: Regression test - product URL rewrite
+      - name: Product URL rewrite
         run: |
           status=$(curl -o /dev/null -s -w "%{http_code}" "https://prestashopcube.dev.fabdevlab.fr/art/4-16-affiche-encadree-the-adventure-begins.html")
           if [ "$status" -ne 200 ]; then
-            echo "Product rewrite returned HTTP $status"
+            echo "Product rewrite error $status"
             exit 1
           fi
 
-    load_test:
+  load_test:
     name: Load test
     runs-on: ubuntu-latest
     needs: smoke_postdeploy
@@ -181,25 +179,25 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y apache2-utils
 
-      - name: Run load test on homepage
+      - name: Run load test
         run: |
           ab -n 50 -c 5 https://prestashopcube.dev.fabdevlab.fr/ | tee ab-results.txt
 
-      - name: Check load test failed requests
+      - name: Check failed requests
         run: |
           grep "Failed requests:        0" ab-results.txt
 
-      - name: Check load test non-2xx responses
+      - name: Check non-2xx
         run: |
           if grep -q "Non-2xx responses:" ab-results.txt; then
             value=$(grep "Non-2xx responses:" ab-results.txt | awk '{print $3}')
             if [ "$value" -ne 0 ]; then
-              echo "Non-2xx responses detected: $value"
+              echo "Non-2xx responses: $value"
               exit 1
             fi
           fi
 
-      - name: Show summary
+      - name: Summary
         run: |
           grep "Requests per second" ab-results.txt || true
           grep "Time per request" ab-results.txt || true
