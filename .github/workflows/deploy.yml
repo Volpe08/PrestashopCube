@@ -170,7 +170,7 @@ jobs:
             exit 1
           fi
 
-  load_test:
+    load_test:
     name: Load test
     runs-on: ubuntu-latest
     needs: smoke_postdeploy
@@ -186,7 +186,8 @@ jobs:
           ab -n 50 -c 5 https://prestashopcube.dev.fabdevlab.fr/ | tee ab-results.txt
 
       - name: Check load test failed requests
-        run: grep "Failed requests:        0" ab-results.txt
+        run: |
+          grep "Failed requests:        0" ab-results.txt
 
       - name: Check load test non-2xx responses
         run: |
